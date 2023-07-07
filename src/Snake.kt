@@ -28,7 +28,7 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
     }
 
     private fun isDead(x:Int, y:Int):Boolean{
-        if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) return true
+        if(x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) return false
         return plateau[x][y] != 0
     }
 
@@ -36,19 +36,19 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
         when(plateau[tailPos.x][tailPos.y]){
             1 -> {
                 plateau[tailPos.x][tailPos.y] = 0
-                tailPos.x++
+                tailPos.x = (tailPos.x + 1)%gridWidth
             }
             2 -> {
                 plateau[tailPos.x][tailPos.y] = 0
-                tailPos.y++
+                tailPos.y = (tailPos.y + 1)%gridHeight
             }
             3 -> {
                 plateau[tailPos.x][tailPos.y] = 0
-                tailPos.x--
+                tailPos.x = (tailPos.x - 1 + gridWidth)%gridWidth
             }
             4 -> {
                 plateau[tailPos.x][tailPos.y] = 0
-                tailPos.y--
+                tailPos.y = (tailPos.y - 1 + gridHeight)%gridHeight
             }
         }
     }
@@ -68,6 +68,7 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
                 plateau[headPos.x][headPos.y] = dirrection
                 //test si pomme
                 headPos.x ++
+                if(headPos.x == gridWidth) headPos.x = 0
 
                 if(headPos == applePos){
                     //miam miam
@@ -83,6 +84,8 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
                 plateau[headPos.x][headPos.y] = dirrection
                 //test si pomme
                 headPos.y ++
+                if(headPos.y == gridHeight) headPos.y = 0
+
 
                 if(headPos == applePos){
                     //miam miam
@@ -98,6 +101,8 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
                 plateau[headPos.x][headPos.y] = dirrection
                 //test si pomme
                 headPos.x --
+                if(headPos.x == -1) headPos.x = gridWidth-1
+
 
                 if(headPos == applePos){
                     //miam miam
@@ -113,6 +118,8 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
                 plateau[headPos.x][headPos.y] = dirrection
                 //test si pomme
                 headPos.y --
+                if(headPos.y == -1) headPos.y = gridHeight-1
+
 
                 if(headPos == applePos){
                     //miam miam
@@ -131,4 +138,6 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
     fun getTailPos():Vector2Int = tailPos
     fun getApplePos():Vector2Int = applePos
     fun getPlateau(x:Int,y:Int):Int = plateau[x][y]
+    fun getDirrection():Int = dirrection
+    fun squaredDistanceToApple():Int = Vector2Int(headPos.x - applePos.x,headPos.y - applePos.y).moduleSqred()
 }

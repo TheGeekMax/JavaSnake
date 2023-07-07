@@ -18,7 +18,6 @@ class KeyboardManager (val keyUp:Int, val keyLeft:Int, val keyDown:Int, val keyR
     }
 
     fun keyPressed(key: KeyEvent){
-        println(key.keyChar)
         if(lastInputDirecton == key.keyCode) {
             return
         }

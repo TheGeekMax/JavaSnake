@@ -20,15 +20,10 @@ public class MainFrame extends JFrame {
     private void mainLoop(){
         while(true) {
             game.loopItteration();
-
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
     }
     public static void main(String[] args) {
+
         new MainFrame();
     }
 }
