@@ -140,4 +140,6 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
     fun getPlateau(x:Int,y:Int):Int = plateau[x][y]
     fun getDirrection():Int = dirrection
     fun squaredDistanceToApple():Int = Vector2Int(headPos.x - applePos.x,headPos.y - applePos.y).moduleSqred()
+    fun getWidth():Int = gridWidth
+    fun getHeight():Int = gridHeight
 }

@@ -1,5 +1,6 @@
 import Picture.PictureManager;
-import com.sun.tools.javac.Main;
+import player.*;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -14,16 +15,104 @@ public class GameScreen extends JPanel {
     public static final int TILE_WIDTH = 32;
     public static final int FRAME_STEP = 10;
 
+    private static final int TIME_SPEED = 6;
+    private static final int TIME_SLOW_SPEED = 9;
+    private static final int TIME_TEXT_BLINK_SPEED = 7;
+
     //variablesp our le jeu
     int frame = 0;
 
     int slowFrame = 0;
     private Snake snakeGame = new Snake(GRID_WIDTH,GRID_HEIGHT);
-    private KeyboardManager keyboard = new KeyboardManager(KeyEvent.VK_Z,KeyEvent.VK_Q,KeyEvent.VK_S,KeyEvent.VK_D);
+    private Player player = new Human(snakeGame);
     private PictureManager pictures = new PictureManager(getClass().getResourceAsStream("/Picture/sprite.png"),16);
 
     public GameScreen(){
         //les images
+        loadTextures();
+
+        //pour la fenetre
+        this.setFocusable(true);
+        this.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if(state == GameState.START && e.getKeyCode() == KeyEvent.VK_SPACE){
+                    state = GameState.PLAYING;
+                    System.out.println("stating !");
+                    frame = 0;
+                }
+
+                if(state == GameState.GAME_OVER && e.getKeyCode() == KeyEvent.VK_SPACE){
+                    state = GameState.PLAYING;
+                    System.out.println("stating !");
+                    frame = 0;
+                    snakeGame = new Snake(GRID_WIDTH,GRID_HEIGHT);
+                    //todo reset la le joueur
+                }
+
+                if(state == GameState.PLAYING) player.keyPressed(e);
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+
+            }
+        });
+    }
+
+    public void loopItteration(){
+        switch(state){
+            case START:
+            case GAME_OVER:
+                if (frame++ == FRAME_STEP*16) {
+                    frame = 0;
+                }
+                this.repaint();
+
+                try {
+                    Thread.sleep(TIME_TEXT_BLINK_SPEED);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                break;
+
+            case PLAYING:
+                if (frame++ == FRAME_STEP) {
+                    snakeGame.changeOrientation(player.play());
+                    boolean gameover = snakeGame.iteration();
+                    this.repaint();
+                    frame = 0;
+
+                    if(!gameover){
+                        System.out.println("game over");
+                        state = GameState.GAME_OVER;
+                        frame = 0;
+                    }
+                    if(slowFrame-- < 0) slowFrame = 0;
+                    if(snakeGame.squaredDistanceToApple()<=16){
+                        slowFrame = 5;
+                    }
+                }
+
+                try {
+                    Thread.sleep(slowFrame>=0?TIME_SLOW_SPEED:TIME_SPEED);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+        }
+    }
+
+    @Override
+    public Dimension getPreferredSize(){
+        return new Dimension(GRID_WIDTH*TILE_WIDTH,GRID_HEIGHT*TILE_WIDTH);
+    }
+
+    private void loadTextures(){
         pictures.addFromPicture("background",1,5);
         pictures.addFromPicture("apple",0,5);
 
@@ -51,85 +140,6 @@ public class GameScreen extends JPanel {
         pictures.addFromPicture("corps_f2_t1",1,3);
         pictures.addFromPicture("corps_f3_t2",2,3);
         pictures.addFromPicture("corps_f4_t3",3,3);
-
-        this.setFocusable(true);
-        this.addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if(state == GameState.START && e.getKeyCode() == KeyEvent.VK_SPACE){
-                    state = GameState.PLAYING;
-                    System.out.println("stating !");
-                    frame = 0;
-                }
-
-                if(state == GameState.GAME_OVER && e.getKeyCode() == KeyEvent.VK_SPACE){
-                    state = GameState.PLAYING;
-                    System.out.println("stating !");
-                    frame = 0;
-                    snakeGame = new Snake(GRID_WIDTH,GRID_HEIGHT);
-                    keyboard = new KeyboardManager(KeyEvent.VK_Z,KeyEvent.VK_Q,KeyEvent.VK_S,KeyEvent.VK_D);
-                }
-
-                if(state == GameState.PLAYING) keyboard.keyPressed(e);
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-
-            }
-        });
-    }
-
-    public void loopItteration(){
-        switch(state){
-            case START:
-            case GAME_OVER:
-                if (frame++ == FRAME_STEP*16) {
-                    frame = 0;
-                }
-                this.repaint();
-
-                try {
-                    Thread.sleep(7);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                break;
-
-            case PLAYING:
-                if (frame++ == FRAME_STEP) {
-                    snakeGame.changeOrientation(keyboard.getDirrection());
-                    boolean gameover = snakeGame.iteration();
-                    this.repaint();
-                    frame = 0;
-
-                    if(!gameover){
-                        System.out.println("game over");
-                        state = GameState.GAME_OVER;
-                        frame = 0;
-                    }
-                    if(slowFrame-- < 0) slowFrame = 0;
-                    if(snakeGame.squaredDistanceToApple()<=16){
-                        slowFrame = 5;
-                    }
-                }
-
-                try {
-                    Thread.sleep(slowFrame>=0?9:6);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-        }
-    }
-
-    @Override
-    public Dimension getPreferredSize(){
-        return new Dimension(GRID_WIDTH*TILE_WIDTH,GRID_HEIGHT*TILE_WIDTH);
     }
 
     private void paintGame(Graphics g){
