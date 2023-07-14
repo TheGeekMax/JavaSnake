@@ -1,36 +1,36 @@
 import Picture.PictureManager;
+import config.AiConfig;
+import config.Configuration;
+import config.PlayerConfig;
 import player.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 
 public class GameScreen extends JPanel {
     private GameState state = GameState.START;
 
     //varibales du jeu
-    public static final int GRID_WIDTH = 22;
-    public static final int GRID_HEIGHT = 22;
-    public static final int TILE_WIDTH = 32;
-    public static final int FRAME_STEP = 10;
-
-    private static final int TIME_SPEED = 6;
-    private static final int TIME_SLOW_SPEED = 9;
-    private static final int TIME_TEXT_BLINK_SPEED = 7;
+    public Configuration config = new PlayerConfig();
+    private int currentFrame = 0;
 
     //variablesp our le jeu
     int frame = 0;
 
     int slowFrame = 0;
-    private Snake snakeGame = new Snake(GRID_WIDTH,GRID_HEIGHT);
+    private Snake snakeGame = new Snake(config.getGRID_WIDTH(),config.getGRID_HEIGHT());
     private Player player = new Human(snakeGame);
     private PictureManager pictures = new PictureManager(getClass().getResourceAsStream("/Picture/sprite.png"),16);
+
+    private BufferedImage[][] background = new BufferedImage[config.getGRID_WIDTH()][config.getGRID_HEIGHT()];
 
     public GameScreen(){
         //les images
         loadTextures();
-
+        setupBackground();
         //pour la fenetre
         this.setFocusable(true);
         this.addKeyListener(new KeyListener() {
@@ -51,7 +51,7 @@ public class GameScreen extends JPanel {
                     state = GameState.PLAYING;
                     System.out.println("stating !");
                     frame = 0;
-                    snakeGame = new Snake(GRID_WIDTH,GRID_HEIGHT);
+                    snakeGame = new Snake(config.getGRID_WIDTH(),config.getGRID_HEIGHT());
                     //todo reset la le joueur
                 }
 
@@ -69,24 +69,30 @@ public class GameScreen extends JPanel {
         switch(state){
             case START:
             case GAME_OVER:
-                if (frame++ == FRAME_STEP*16) {
+                if (frame++ == config.getFRAME_STEP()*16) {
                     frame = 0;
                 }
                 this.repaint();
 
                 try {
-                    Thread.sleep(TIME_TEXT_BLINK_SPEED);
+                    Thread.sleep(config.getTIME_TEXT_BLINK_SPEED());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
                 break;
 
             case PLAYING:
-                if (frame++ == FRAME_STEP) {
+                if (frame++ == config.getFRAME_STEP()) {
                     snakeGame.changeOrientation(player.play());
                     boolean gameover = snakeGame.iteration();
-                    this.repaint();
                     frame = 0;
+                    if(currentFrame ++ == config.getFRAME_SKIP()) {
+                        this.repaint();
+                        currentFrame = 0;
+                    }else{
+                        frame = config.getFRAME_STEP();
+                    }
+
 
                     if(!gameover){
                         System.out.println("game over");
@@ -100,7 +106,7 @@ public class GameScreen extends JPanel {
                 }
 
                 try {
-                    Thread.sleep(slowFrame>=0?TIME_SLOW_SPEED:TIME_SPEED);
+                    Thread.sleep(slowFrame>=0?config.getTIME_SLOW_SPEED():config.getTIME_SPEED());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -109,7 +115,7 @@ public class GameScreen extends JPanel {
 
     @Override
     public Dimension getPreferredSize(){
-        return new Dimension(GRID_WIDTH*TILE_WIDTH,GRID_HEIGHT*TILE_WIDTH);
+        return new Dimension(config.getGRID_WIDTH()*config.getTILE_WIDTH(),config.getGRID_HEIGHT()*config.getTILE_WIDTH());
     }
 
     private void loadTextures(){
@@ -140,19 +146,52 @@ public class GameScreen extends JPanel {
         pictures.addFromPicture("corps_f2_t1",1,3);
         pictures.addFromPicture("corps_f3_t2",2,3);
         pictures.addFromPicture("corps_f4_t3",3,3);
+
+        //background
+        pictures.addFromPicture("bg_tl",4,0);
+        pictures.addFromPicture("bg_ml",4,1);
+        pictures.addFromPicture("bg_bl",4,2);
+
+        pictures.addFromPicture("bg_tm",5,0);
+        pictures.addFromPicture("bg_al",5,1);
+        pictures.addFromPicture("bg_bm",5,2);
+
+        pictures.addFromPicture("bg_tr",6,0);
+        pictures.addFromPicture("bg_mr",6,1);
+        pictures.addFromPicture("bg_br",6,2);
+    }
+
+    private void setupBackground(){
+        for(int i = 0 ; i < config.getGRID_WIDTH(); i++){
+            for(int j = 0 ; j < config.getGRID_HEIGHT(); j++){
+                //on affiche le tableau
+                if(i == 0 && j == 0) // corners
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_tl");
+                else if(i == config.getGRID_WIDTH()-1 && j == 0)
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_tr");
+                else if(i == 0 && j == config.getGRID_HEIGHT()-1)
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_bl");
+                else if(i == config.getGRID_WIDTH()-1 && j == config.getGRID_HEIGHT()-1)
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_br");
+                else if(i == 0)
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_ml");
+                else if(i == config.getGRID_WIDTH()-1)
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_mr");
+                else if(j == 0)
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_tm");
+                else if(j == config.getGRID_HEIGHT()-1)
+                    background[i][j] = pictures.getBufferedPictureFromName("bg_bm");
+                else{
+                    background[i][j] = Math.random()>0.5?pictures.getBufferedPictureFromName("background"):pictures.getBufferedPictureFromName("bg_al");
+                }
+            }
+        }
     }
 
     private void paintGame(Graphics g){
-        g.setColor(Color.BLACK);
-        g.fillRect(0,0,GRID_WIDTH*TILE_WIDTH,GRID_HEIGHT*TILE_WIDTH);
 
         //on affiche le tableau
-        for(int i = 0 ; i < GRID_WIDTH; i++){
-            for(int j = 0 ; j < GRID_HEIGHT; j++){
-                //on affiche le tableau
-                g.drawImage(pictures.getBufferedPictureFromName("background"),i*TILE_WIDTH,j*TILE_WIDTH,TILE_WIDTH,TILE_WIDTH,null);
-            }
-        }
+
         Vector2Int head = snakeGame.getHeadPos();
         Vector2Int tail = snakeGame.getTailPos();
         Vector2Int apple = snakeGame.getApplePos();
@@ -162,38 +201,36 @@ public class GameScreen extends JPanel {
         Vector2Int back1 = new Vector2Int(tail.getX(),tail.getY());
         Vector2Int back0 = back1;
         switch(snakeGame.getPlateau(back1.getX(),back1.getY())){
-            case 1 -> back0 = new Vector2Int((back1.getX() + 1)%GRID_WIDTH, back1.getY());
-            case 2 -> back0 = new Vector2Int(back1.getX() , (back1.getY() + 1 )%GRID_HEIGHT);
-            case 3 -> back0 = new Vector2Int((back1.getX() - 1 + GRID_WIDTH)%GRID_WIDTH, back1.getY());
-            case 4 -> back0 = new Vector2Int(back1.getX() , (back1.getY() -1 + GRID_HEIGHT)%GRID_HEIGHT);
+            case 1 -> back0 = new Vector2Int((back1.getX() + 1)%config.getGRID_WIDTH(), back1.getY());
+            case 2 -> back0 = new Vector2Int(back1.getX() , (back1.getY() + 1 )%config.getGRID_HEIGHT());
+            case 3 -> back0 = new Vector2Int((back1.getX() - 1 + config.getGRID_WIDTH())%config.getGRID_WIDTH(), back1.getY());
+            case 4 -> back0 = new Vector2Int(back1.getX() , (back1.getY() -1 + config.getGRID_HEIGHT())%config.getGRID_HEIGHT());
         }
 
         while(back0.getX() != head.getX() || back1.getY() != head.getY()){
             String picName = "corps_f"+snakeGame.getPlateau(back1.getX(),back1.getY())+"_t"+ snakeGame.getPlateau(back0.getX(),back0.getY());
-            g.drawImage(pictures.getBufferedPictureFromName(picName),back0.getX()*TILE_WIDTH,back0.getY()*TILE_WIDTH,TILE_WIDTH,TILE_WIDTH,null);
+            g.drawImage(pictures.getBufferedPictureFromName(picName),back0.getX()*config.getTILE_WIDTH(),back0.getY()*config.getTILE_WIDTH(),config.getTILE_WIDTH(),config.getTILE_WIDTH(),null);
             back1 = new Vector2Int(back0.getX(),back0.getY());
             switch(snakeGame.getPlateau(back1.getX(),back1.getY())){
-                case 1 -> back0 = new Vector2Int((back1.getX() + 1)%GRID_WIDTH, back1.getY());
-                case 2 -> back0 = new Vector2Int(back1.getX() , (back1.getY() + 1)%GRID_HEIGHT);
-                case 3 -> back0 = new Vector2Int((back1.getX() - 1 + GRID_WIDTH)%GRID_WIDTH, back1.getY());
-                case 4 -> back0 = new Vector2Int(back1.getX() , (back1.getY() -1 + GRID_HEIGHT)%GRID_HEIGHT);
+                case 1 -> back0 = new Vector2Int((back1.getX() + 1)%config.getGRID_WIDTH(), back1.getY());
+                case 2 -> back0 = new Vector2Int(back1.getX() , (back1.getY() + 1)%config.getGRID_HEIGHT());
+                case 3 -> back0 = new Vector2Int((back1.getX() - 1 + config.getGRID_WIDTH())%config.getGRID_WIDTH(), back1.getY());
+                case 4 -> back0 = new Vector2Int(back1.getX() , (back1.getY() -1 + config.getGRID_HEIGHT())%config.getGRID_HEIGHT());
             }
         }
 
         //on print la pomme, la tete et la queue
         g.setColor(Color.BLUE);
-        g.drawImage(pictures.getBufferedPictureFromName("head_"+snakeGame.getDirrection()),head.getX()*TILE_WIDTH,head.getY()*TILE_WIDTH,TILE_WIDTH,TILE_WIDTH,null);
-        g.drawImage(pictures.getBufferedPictureFromName("tail_"+snakeGame.getPlateau(tail.getX(),tail.getY())),tail.getX()*TILE_WIDTH,tail.getY()*TILE_WIDTH,TILE_WIDTH,TILE_WIDTH,null);
+        g.drawImage(pictures.getBufferedPictureFromName("head_"+snakeGame.getDirrection()),head.getX()*config.getTILE_WIDTH(),head.getY()*config.getTILE_WIDTH(),config.getTILE_WIDTH(),config.getTILE_WIDTH(),null);
+        g.drawImage(pictures.getBufferedPictureFromName("tail_"+snakeGame.getPlateau(tail.getX(),tail.getY())),tail.getX()*config.getTILE_WIDTH(),tail.getY()*config.getTILE_WIDTH(),config.getTILE_WIDTH(),config.getTILE_WIDTH(),null);
 
         g.setColor(Color.RED);
-        g.drawImage(pictures.getBufferedPictureFromName("apple"),apple.getX()*TILE_WIDTH,apple.getY()*TILE_WIDTH,TILE_WIDTH,TILE_WIDTH,null);
+        g.drawImage(pictures.getBufferedPictureFromName("apple"),apple.getX()*config.getTILE_WIDTH(),apple.getY()*config.getTILE_WIDTH(),config.getTILE_WIDTH(),config.getTILE_WIDTH(),null);
     }
 
     private void paintPressStart(Graphics g){
-        g.setColor(Color.BLACK);
-        g.fillRect(0,0,GRID_WIDTH*TILE_WIDTH,GRID_HEIGHT*TILE_WIDTH);
 
-        if(frame < FRAME_STEP*8){
+        if(frame < config.getFRAME_STEP()*8){
             g.setColor(Color.WHITE);
             g.setFont(g.getFont().deriveFont(30f));
 
@@ -201,7 +238,7 @@ public class GameScreen extends JPanel {
             int Ilength = (int)bounds.getWidth();
             int Iheight = (int)bounds.getHeight();
 
-            g.drawString("Press space to start",GRID_WIDTH*TILE_WIDTH/2-Ilength/2,GRID_HEIGHT*TILE_WIDTH/2-Iheight/2);
+            g.drawString("Press space to start",config.getGRID_WIDTH()*config.getTILE_WIDTH()/2-Ilength/2,config.getGRID_HEIGHT()*config.getTILE_WIDTH()/2-Iheight/2);
         }
     }
 
@@ -215,19 +252,28 @@ public class GameScreen extends JPanel {
         int Ilength = (int)bounds.getWidth();
         int Iheight = (int)bounds.getHeight();
 
-        g.drawString("Game Over",GRID_WIDTH*TILE_WIDTH/2-Ilength/2,GRID_HEIGHT*TILE_WIDTH/2-Iheight);
+        g.drawString("Game Over",config.getGRID_WIDTH()*config.getTILE_WIDTH()/2-Ilength/2,config.getGRID_HEIGHT()*config.getTILE_WIDTH()/2-Iheight);
 
         bounds = g.getFontMetrics().getStringBounds("Press space to restart", g);
         Ilength = (int)bounds.getWidth();
         Iheight = (int)bounds.getHeight();
 
-        g.drawString("Press space to restart",GRID_WIDTH*TILE_WIDTH/2-Ilength/2,GRID_HEIGHT*TILE_WIDTH/2+Iheight);
+        g.drawString("Press space to restart",config.getGRID_WIDTH()*config.getTILE_WIDTH()/2-Ilength/2,config.getGRID_HEIGHT()*config.getTILE_WIDTH()/2+Iheight);
 
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+
+        g.setColor(Color.BLACK);
+        g.fillRect(0,0,config.getGRID_WIDTH()*config.getTILE_WIDTH(),config.getGRID_HEIGHT()*config.getTILE_WIDTH());
+        for(int i = 0 ; i < config.getGRID_WIDTH(); i++){
+            for(int j = 0 ; j < config.getGRID_HEIGHT(); j++){
+                //on affiche le tableau
+                g.drawImage(background[i][j],i*config.getTILE_WIDTH(),j*config.getTILE_WIDTH(),config.getTILE_WIDTH(),config.getTILE_WIDTH(),null);
+            }
+        }
         switch(state){
             case START -> paintPressStart(g);
             case PLAYING -> paintGame(g);

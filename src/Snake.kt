@@ -23,7 +23,7 @@ class Snake(private val gridWidth: Int, private val gridHeight: Int){
         do{
             nx = Random.nextInt(0,gridWidth)
             ny = Random.nextInt(0,gridHeight)
-        }while(plateau[nx][ny] != 0)
+        }while(plateau[nx][ny] != 0 || (headPos.x == nx && headPos.y == ny))
         applePos = Vector2Int(nx,ny)
     }
 
